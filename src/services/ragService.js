@@ -86,6 +86,10 @@ export const answerQuery = async (userQuery, requestId = null) => {
       };
     }
     
+    console.log('=== SIMILARITY THRESHOLD PASSED ===');
+    console.log(`Top score: ${topScore}, Threshold: ${config.rag.similarityThreshold}`);
+    console.log('Proceeding with context generation...');
+    
     // Step 4: Build context from matches
     const context = matches
       .map(match => match.metadata.text || '')
@@ -121,17 +125,32 @@ export const answerQuery = async (userQuery, requestId = null) => {
     
     logger.info('Generating response with LLM', { requestId });
     
+    // TEMPORARY DEBUG: Skip LLM and return direct context
+    console.log('=== BYPASSING LLM FOR DEBUGGING ===');
+    console.log('Returning first match content directly...');
+    
+    const rawAnswer = `Based on the Mangalam College database:
+
+${matches[0].metadata.text}
+
+Additional information from other matches:
+${matches.slice(1, 3).map((match, idx) => `${idx + 2}. ${match.metadata.text.substring(0, 200)}...`).join('\n')}
+
+Source: Page ${matches[0].metadata.pageId || 'unknown'}, Lines ${matches[0].metadata['loc.lines.from'] || 'unknown'}-${matches[0].metadata['loc.lines.to'] || 'unknown'}`;
+    
+    /*
     // Step 6: Generate answer
     const rawAnswer = await providerManager.generate(ragPrompt, {
       temperature: 0.1,
       maxTokens: 1024
     });
+    */
     
     // DEBUG: Log LLM response
     console.log('=== LLM RESPONSE DEBUG ===');
     console.log('RAG Prompt length:', ragPrompt.length);
     console.log('RAG Prompt preview:', ragPrompt.substring(0, 500) + '...');
-    console.log('Raw LLM Answer:', rawAnswer);
+    console.log('Raw LLM Answer (bypassed):', rawAnswer.substring(0, 300) + '...');
     console.log('=== END LLM DEBUG ===');
     
     // Step 7: Sanitize answer
