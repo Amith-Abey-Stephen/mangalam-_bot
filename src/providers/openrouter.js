@@ -41,13 +41,6 @@ class OpenRouterProvider {
         }
       );
 
-      // Debug: Log the response structure
-      console.log('OpenRouter embedding response:', JSON.stringify(response.data, null, 2));
-      
-      if (!response.data || !response.data.data || !response.data.data[0]) {
-        throw new Error(`Invalid OpenRouter embedding response structure: ${JSON.stringify(response.data)}`);
-      }
-      
       const embedding = response.data.data[0].embedding;
       logger.info(`Generated embedding with ${embedding.length} dimensions`);
       return embedding;
