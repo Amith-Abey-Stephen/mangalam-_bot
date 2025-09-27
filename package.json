@@ -1,0 +1,39 @@
+{
+  "name": "mangalam-college-chatbot",
+  "version": "1.0.0",
+  "description": "Mangalam College RAG Chatbot with strict knowledge base answers",
+  "main": "src/app.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "test": "jest",
+    "build:frontend": "cd frontend && npm run build",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:frontend\""
+  },
+  "dependencies": {
+    "@pinecone-database/pinecone": "^6.1.2",
+    "axios": "^1.5.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.10.0",
+    "helmet": "^7.0.0",
+    "winston": "^3.10.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.1",
+    "jest": "^29.6.4",
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "chatbot",
+    "rag",
+    "pinecone",
+    "college",
+    "education"
+  ],
+  "author": "Mangalam College of Engineering",
+  "license": "MIT"
+}
