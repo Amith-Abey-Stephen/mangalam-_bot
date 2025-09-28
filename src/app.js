@@ -45,7 +45,7 @@ app.use(helmet({
 app.use(cors({
   origin: config.nodeEnv === 'development' 
     ? ['http://localhost:3000', 'http://localhost:5173'] 
-    : ['https://mangalam-bot.pages.dev','https://mangalam-bot.vercel.app/'], // Replace with actual domain
+    : ['https://your-domain.com'], // Replace with actual domain
   credentials: true,
   methods: ['GET', 'POST'],
   allowedHeaders: ['Content-Type', 'Authorization']
