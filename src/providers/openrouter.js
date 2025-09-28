@@ -41,22 +41,12 @@ class OpenRouterProvider {
         }
       );
 
-      if (!response.data || !response.data.data || !response.data.data[0] || !response.data.data[0].embedding) {
-        throw new Error('Invalid response structure from OpenRouter embeddings API');
-      }
-
       const embedding = response.data.data[0].embedding;
       logger.info(`Generated embedding with ${embedding.length} dimensions`);
       return embedding;
     } catch (error) {
-      const errorMessage = error.response?.data?.error?.message || error.message;
-      const statusCode = error.response?.status;
-      logger.error('Error generating OpenRouter embedding:', { 
-        message: errorMessage, 
-        status: statusCode,
-        model: this.embedModel 
-      });
-      throw new Error(`OpenRouter Embedding Error: ${errorMessage}`);
+      logger.error('Error generating OpenRouter embedding:', error.response?.data || error.message);
+      throw error;
     }
   }
 
@@ -87,35 +77,12 @@ class OpenRouterProvider {
         }
       );
 
-      // Validate response structure
-      if (!response.data?.choices?.[0]?.message?.content) {
-        throw new Error('Invalid response structure from OpenRouter API');
-      }
-
       const generatedText = response.data.choices[0].message.content;
       logger.info('Generated response from OpenRouter');
       return generatedText;
     } catch (error) {
-      const errorMessage = error.response?.data?.error?.message || error.message;
-      const statusCode = error.response?.status;
-      logger.error('Error generating OpenRouter response:', { 
-        message: errorMessage, 
-        status: statusCode,
-        model: this.llmModel 
-      });
-      
-      // Handle specific error cases
-      if (statusCode === 404) {
-        throw new Error(`OpenRouter model '${this.llmModel}' not found. Please check the model name.`);
-      } else if (statusCode === 401) {
-        throw new Error('OpenRouter API access denied. Please check your API key.');
-      } else if (statusCode === 429) {
-        throw new Error('OpenRouter API rate limit exceeded. Please try again later.');
-      } else if (statusCode === 503) {
-        throw new Error('OpenRouter service unavailable. Please try again later.');
-      }
-      
-      throw new Error(`OpenRouter API Error: ${errorMessage}`);
+      logger.error('Error generating OpenRouter response:', error.response?.data || error.message);
+      throw error;
     }
   }
 }

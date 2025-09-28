@@ -1,6 +1,6 @@
 import { queryPinecone } from '../utils/pineconeClient.js';
 import providerManager from '../providers/index.js';
-
+import { sanitizeAnswer } from './sanitize.js';
 import config from '../config.js';
 import winston from 'winston';
 
@@ -14,6 +14,18 @@ const logger = winston.createLogger({
 });
 
 const FALLBACK_MESSAGE = "Sorry, I don't have information about that in the Mangalam College database.";
+
+const STRICT_RAG_PROMPT = `You are a friendly guide for Mangalam College of Engineering.
+Answer the question strictly using ONLY the following context. Do NOT invent or add any information not in the context.
+
+Context:
+{context}
+
+Question:
+{user_question}
+
+Respond in a friendly, concise paragraph(s). At the end, list the source sections used (comma-separated).
+If the context does not contain the answer, reply: "${FALLBACK_MESSAGE}"`;
 
 export const answerQuery = async (userQuery, requestId = null) => {
   const startTime = Date.now();
@@ -84,7 +96,12 @@ export const answerQuery = async (userQuery, requestId = null) => {
       .filter(text => text.length > 0)
       .join('\n\n');
     
-    logger.info(`Built context from ${matches.filter(m => m.metadata.text).length} matches, length: ${context.length}`, { requestId });
+    // DEBUG: Log context building
+    console.log('=== CONTEXT BUILDING DEBUG ===');
+    console.log('Matches with text:', matches.filter(m => m.metadata.text).length);
+    console.log('Context length:', context.length);
+    console.log('Context preview:', context.substring(0, 300) + '...');
+    console.log('=== END CONTEXT DEBUG ===');
     
     if (!context.trim()) {
       logger.warn('No valid context found in matches', { requestId });
@@ -101,66 +118,65 @@ export const answerQuery = async (userQuery, requestId = null) => {
       };
     }
     
-    logger.info('Generating AI-parsed response from retrieved content', { requestId });
+    // Step 5: Generate RAG prompt
+    const ragPrompt = STRICT_RAG_PROMPT
+      .replace('{context}', context)
+      .replace('{user_question}', userQuery);
     
-    // Create an intelligent parsing prompt for the LLM
-    const parsingPrompt = `You are an expert at extracting and presenting relevant information from college database content.
-
-User Question: "${userQuery}"
-
-Database Content to Parse:
-${context}
-
-Instructions:
-1. Extract ONLY the information that directly answers the user's question
-2. Present it in a clear, concise, and well-formatted manner
-3. Use bullet points or numbered lists when appropriate
-4. Remove redundant or irrelevant information
-5. Keep the response focused and easy to read
-6. If dates, names, or specific details are mentioned, include them accurately
-7. Do not include meta-information like page numbers or technical details
-
-Provide a direct, helpful answer based on the retrieved content:`;
-
-    logger.info('Using AI to parse and format the response', { requestId });
+    logger.info('Generating response with LLM', { requestId });
     
-    let rawAnswer;
-    try {
-      // Use AI to intelligently parse and format the response
-      rawAnswer = await providerManager.generate(parsingPrompt, {
-        temperature: 0.1,
-        maxTokens: 1024
-      });
-      
-      logger.info('AI parsing completed successfully', { requestId });
-    } catch (error) {
-      logger.warn('AI parsing failed, using fallback formatting', { error: error.message, requestId });
-      
-      // Fallback: Basic extraction from primary match
-      const primaryMatch = matches[0];
-      const cleanText = primaryMatch.metadata.text
-        .replace(/\n+/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-      
-      rawAnswer = `**${userQuery}**
+    // TEMPORARY DEBUG: Skip LLM and return direct context
+    console.log('=== BYPASSING LLM FOR DEBUGGING ===');
+    console.log('Returning first match content directly...');
+    
+    const rawAnswer = `Based on the Mangalam College database:
 
-${cleanText.substring(0, 500)}${cleanText.length > 500 ? '...' : ''}
+${matches[0].metadata.text}
 
-*Based on information from Mangalam College database*`;
+Additional information from other matches:
+${matches.slice(1, 3).map((match, idx) => `${idx + 2}. ${match.metadata.text.substring(0, 200)}...`).join('\n')}
+
+Source: Page ${matches[0].metadata.pageId || 'unknown'}, Lines ${matches[0].metadata['loc.lines.from'] || 'unknown'}-${matches[0].metadata['loc.lines.to'] || 'unknown'}`;
+    
+    /*
+    // Step 6: Generate answer
+    const rawAnswer = await providerManager.generate(ragPrompt, {
+      temperature: 0.1,
+      maxTokens: 1024
+    });
+    */
+    
+    // DEBUG: Log LLM response
+    console.log('=== LLM RESPONSE DEBUG ===');
+    console.log('RAG Prompt length:', ragPrompt.length);
+    console.log('RAG Prompt preview:', ragPrompt.substring(0, 500) + '...');
+    console.log('Raw LLM Answer (bypassed):', rawAnswer.substring(0, 300) + '...');
+    console.log('=== END LLM DEBUG ===');
+    
+    // Step 7: Sanitize answer
+    const sanitizedResult = await sanitizeAnswer(rawAnswer, context, matches, providerManager);
+    
+    if (!sanitizedResult || !sanitizedResult.answer) {
+      logger.warn('Answer failed sanitization', { requestId });
+      return {
+        answer: FALLBACK_MESSAGE,
+        sources: [],
+        metadata: {
+          query: userQuery,
+          matches_count: matches.length,
+          top_score: topScore,
+          processing_time_ms: Date.now() - startTime,
+          reason: 'failed_sanitization'
+        }
+      };
     }
     
     const processingTime = Date.now() - startTime;
     logger.info(`Query processed successfully in ${processingTime}ms`, { requestId });
     
-    // Return raw answer without sanitization
     return {
-      answer: rawAnswer,
-      sources: matches.map(match => ({
-        text: match.metadata.text,
-        score: match.score,
-        source: match.metadata.source || 'document'
-      })),
+      answer: sanitizedResult.answer,
+      sources: sanitizedResult.sources,
       metadata: {
         query: userQuery,
         matches_count: matches.length,

@@ -89,27 +89,12 @@ router.post('/', async (req, res) => {
 });
 
 // GET /api/ask/health - Health check endpoint
-router.get('/health', async (req, res) => {
-  try {
-    const providerManager = (await import('../providers/index.js')).default;
-    const modelIssues = providerManager.validateModels();
-    const modelsInfo = providerManager.getModelsInfo();
-    
-    res.json({
-      status: modelIssues.length === 0 ? 'healthy' : 'warning',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      models: modelsInfo,
-      issues: modelIssues
-    });
-  } catch (error) {
-    logger.error('Health check failed:', error);
-    res.status(500).json({
-      status: 'unhealthy',
-      timestamp: new Date().toISOString(),
-      error: error.message
-    });
-  }
+router.get('/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  });
 });
 
 // GET /api/ask/stats - Basic statistics endpoint
