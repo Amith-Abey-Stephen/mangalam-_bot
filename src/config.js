@@ -15,13 +15,13 @@ const config = {
   gemini: {
     apiKey: process.env.GEMINI_API_KEY,
     embedModel: process.env.GEMINI_EMBED_MODEL || 'text-embedding-004',
-    llmModel: process.env.GEMINI_LLM_MODEL || 'gemini-1.5-flash'
+    llmModel: process.env.GEMINI_LLM_MODEL || 'gemini-1.5-flash-002'
   },
   
   openrouter: {
     apiKey: process.env.OPENROUTER_API_KEY,
     embedModel: process.env.OPENROUTER_EMBED_MODEL || 'text-embedding-3-large',
-    llmModel: process.env.OPENROUTER_LLM_MODEL || 'meta-llama/llama-3.1-8b-instruct:free'
+    llmModel: process.env.OPENROUTER_LLM_MODEL || 'meta-llama/llama-3.3-8b-instruct:free'
   },
   
   rag: {

@@ -65,12 +65,12 @@ A friendly, strict RAG (Retrieval-Augmented Generation) chatbot for Mangalam Col
    # Gemini Configuration (if using Gemini)
    GEMINI_API_KEY=your_gemini_api_key_here
    GEMINI_EMBED_MODEL=text-embedding-004
-   GEMINI_LLM_MODEL=gemini-1.5-flash
+   GEMINI_LLM_MODEL=gemini-1.5-flash-002
    
    # OpenRouter Configuration (if using OpenRouter)
    OPENROUTER_API_KEY=your_openrouter_api_key_here
    OPENROUTER_EMBED_MODEL=text-embedding-3-large
-   OPENROUTER_LLM_MODEL=meta-llama/llama-3.1-8b-instruct:free
+   OPENROUTER_LLM_MODEL=meta-llama/llama-3.3-8b-instruct:free
    
    # RAG Configuration
    TOPK=5
@@ -121,12 +121,57 @@ npm run start
 cd frontend && npm run build
 ```
 
+## 🔧 Troubleshooting
+
+### Model Configuration Issues
+
+1. **Check Model Names**: Ensure you're using the latest model names:
+   - Gemini LLM: `gemini-1.5-flash-002` (updated from `gemini-1.5-flash`)
+   - OpenRouter LLM: `meta-llama/llama-3.3-8b-instruct:free` (updated from `llama-3.1-8b-instruct:free`)
+
+2. **API Key Issues**: 
+   - Verify your API keys are correctly set in the `.env` file
+   - Check the health endpoint at `/api/ask/health` to see model status
+   - Ensure API keys have the necessary permissions
+
+3. **Model Availability**:
+   - Gemini models: Check Google AI Studio for availability
+   - OpenRouter models: Visit OpenRouter.ai to see current model status
+   - Some models may have rate limits or temporary unavailability
+
+4. **Fallback Behavior**: The system automatically tries alternative providers if the primary one fails
+
 ## 📊 API Endpoints
 
 ### Chat API
 - `POST /api/ask` - Send a chat message
-- `GET /api/ask/health` - Health check
+- `GET /api/ask/health` - Health check with model validation
 - `GET /api/ask/stats` - System statistics
+
+### Health Check Response
+The health check endpoint provides comprehensive model status:
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-01T00:00:00.000Z",
+  "uptime": 3600,
+  "models": {
+    "current": "gemini",
+    "available": ["gemini", "openrouter"],
+    "gemini": {
+      "embedModel": "text-embedding-004",
+      "llmModel": "gemini-1.5-flash-002",
+      "hasApiKey": true
+    },
+    "openrouter": {
+      "embedModel": "text-embedding-3-large",
+      "llmModel": "meta-llama/llama-3.3-8b-instruct:free",
+      "hasApiKey": false
+    }
+  },
+  "issues": []
+}
+```
 
 ### Example Request
 ```json

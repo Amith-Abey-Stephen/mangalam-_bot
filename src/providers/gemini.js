@@ -44,8 +44,14 @@ class GeminiProvider {
       logger.info(`Generated embedding with ${embedding.length} dimensions`);
       return embedding;
     } catch (error) {
-      logger.error('Error generating Gemini embedding:', error.response?.data || error.message);
-      throw error;
+      const errorMessage = error.response?.data?.error?.message || error.message;
+      const statusCode = error.response?.status;
+      logger.error('Error generating Gemini embedding:', { 
+        message: errorMessage, 
+        status: statusCode,
+        model: this.embedModel 
+      });
+      throw new Error(`Gemini Embedding Error: ${errorMessage}`);
     }
   }
 
@@ -75,12 +81,33 @@ class GeminiProvider {
         }
       );
 
+      // Validate response structure
+      if (!response.data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+        throw new Error('Invalid response structure from Gemini API');
+      }
+
       const generatedText = response.data.candidates[0].content.parts[0].text;
       logger.info('Generated response from Gemini');
       return generatedText;
     } catch (error) {
-      logger.error('Error generating Gemini response:', error.response?.data || error.message);
-      throw error;
+      const errorMessage = error.response?.data?.error?.message || error.message;
+      const statusCode = error.response?.status;
+      logger.error('Error generating Gemini response:', { 
+        message: errorMessage, 
+        status: statusCode,
+        model: this.llmModel 
+      });
+      
+      // Handle specific error cases
+      if (statusCode === 404) {
+        throw new Error(`Gemini model '${this.llmModel}' not found. Please check the model name.`);
+      } else if (statusCode === 403) {
+        throw new Error('Gemini API access denied. Please check your API key and permissions.');
+      } else if (statusCode === 429) {
+        throw new Error('Gemini API rate limit exceeded. Please try again later.');
+      }
+      
+      throw new Error(`Gemini API Error: ${errorMessage}`);
     }
   }
 }
