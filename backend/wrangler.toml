@@ -1,0 +1,7 @@
+name = "gemini-pinecone-rag-worker"
+main = "src/index.js"
+compatibility_date = "2024-04-03"
+nodejs_compat = true
+
+[vars]
+PINECONE_INDEX_NAME = "mangalam-college-index"

@@ -1,0 +1,15 @@
+{
+  "name": "gemini-pinecone-rag-worker",
+  "version": "1.0.0",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@google/genai": "^1.21.0",
+    "@pinecone-database/pinecone": "^6.1.2",
+    "hono": "^4.9.9"
+  }
+}
